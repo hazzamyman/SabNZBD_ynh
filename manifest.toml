@@ -96,7 +96,7 @@ ram.runtime = "50M"
         #    ynh_setup_source --dest_dir="$install_dir"
         # You can also define other assets than "main" and add --source_id="foobar" in the previous command
         url = "https://github.com/sabnzbd/sabnzbd/releases/download/4.1.0/SABnzbd-4.1.0-src.tar.gz"
-        sha256 = "24cdc711a9a942b65b53dd5c084f79cc0f6d978c5c712481b7031751d569588"
+        sha256 = "24cdc711a9a9425b65b53dd5c084f78cc0f6d978c5c712481b7031751d569588"
 
         # These infos are used by https://github.com/YunoHost/apps/blob/master/tools/autoupdate_app_sources/autoupdate_app_sources.py
         # to auto-update the previous asset urls and sha256sum + manifest version
