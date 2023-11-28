@@ -1,16 +1,17 @@
 [Unit]
 Description=sabnzbd
-Wants=network-online.target
-After=network-online.target nss-lookup.target
+After=network.target
 
 [Service]
 Type=simple
 User=__APP__
 Group=__APP__
-WorkingDirectory=__INSTALL_DIR__/
-ExecStart=__INSTALL_DIR__/script
+EnvironmentFile=__INSTALL_DIR__/.env
+WorkingDirectory=__INSTALL_DIR__/live/bin
+ExecStart=__INSTALL_DIR__/live/bin/sabnzbd --trace start
 StandardOutput=append:/var/log/__APP__/__APP__.log
 StandardError=inherit
+TimeoutSec=900
 
 # Sandboxing options to harden security
 # Depending on specificities of your service/app, you may need to tweak these
@@ -19,7 +20,7 @@ StandardError=inherit
 NoNewPrivileges=yes
 PrivateTmp=yes
 PrivateDevices=yes
-RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 RestrictNamespaces=yes
 RestrictRealtime=yes
 DevicePolicy=closed
@@ -32,7 +33,7 @@ ProtectKernelModules=yes
 ProtectKernelTunables=yes
 LockPersonality=yes
 SystemCallArchitectures=native
-SystemCallFilter=~@clock @debug @module @mount @obsolete @reboot @setuid @swap @cpu-emulation @privileged
+SystemCallFilter=~@clock @debug @module @mount @obsolete @reboot @setuid @swap
 
 # Denying access to capabilities that should not be relevant for webapps
 # Doc: https://man7.org/linux/man-pages/man7/capabilities.7.html
