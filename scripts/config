@@ -96,6 +96,53 @@ set__prices() {
     ynh_app_setting_set $app prices $prices
 }
 
+ynh_app_config_apply() {
+    _ynh_app_config_apply
+
+    if [ "${changed[phpversion]}" == "true" ]
+    then
+        ynh_app_setting_set --app=$app --key=phpversion --value="${old[phpversion]}"
+        ynh_remove_fpm_config
+        # ^ the helper includes ynh_remove_app_dependencies
+        YNH_PHP_VERSION=$phpversion
+        # ^ ynh_add_config replaces __PHPVERSION__ by __PHP_YNH_VERSION__...
+        ynh_app_setting_set --app=$app --key=phpversion --value="$phpversion"
+
+        nginx_extra_conf_dir="/etc/nginx/conf.d/$domain.d/$app.d"
+        mkdir -p "$nginx_extra_conf_dir"
+        if [ "$phpversion" == "none" ]
+        then
+            ynh_delete_file_checksum --file="$nginx_extra_conf_dir/php.conf"
+            ynh_secure_remove --file="$nginx_extra_conf_dir/php.conf"
+        else
+            ynh_add_config --template="nginx-php.conf" --destination="$nginx_extra_conf_dir/php.conf"
+            ynh_install_app_dependencies "php${phpversion}-fpm"
+            ynh_add_fpm_config --usage=$fpm_usage --footprint=$fpm_footprint --phpversion=$phpversion
+            # ^ the helper takes care of ynh_app_setting_set the phpversion
+        fi
+
+        ynh_add_nginx_config
+    fi
+
+    if [ "${changed[with_sftp]}" == "true" ] && [ $with_sftp -eq 1 ]
+    then
+        ynh_system_user_add_group --username=$app --groups="sftp.app"
+
+        if [ ! "$password" == "" ]
+        then
+            chpasswd <<< "${app}:${password}"
+        fi
+    elif [ "${changed[with_sftp]}" == "true" ] && [ $with_sftp -eq 0 ]
+    then
+        ynh_system_user_del_group --username=$app --groups="sftp.app"
+    fi
+
+    if [ "$phpversion" != "none" ]
+    then
+        ynh_add_fpm_config --phpversion=$phpversion --usage=$fpm_usage --footprint=$fpm_footprint
+    fi
+}
+
 #=================================================
 # GENERIC FINALIZATION
 #=================================================
