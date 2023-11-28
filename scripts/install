@@ -22,7 +22,7 @@ source /usr/share/yunohost/helpers
 #=================================================
 ynh_script_progression --message="Storing installation settings..."
 
-ynh_app_setting_set --app=$app --key=admin_token --value=$admin_token
+#ynh_app_setting_set --app=$app --key=admin_token --value=$admin_token
 
 #=================================================
 # DOWNLOAD, CHECK AND UNPACK SOURCE
