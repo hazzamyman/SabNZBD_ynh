@@ -72,3 +72,5 @@ ynh_docker_image_extract() {
 	# Add supplementary files
 	if test -e "$YNH_APP_BASEDIR/sources/extra_files/${image_spec}"; then
 		cp --archive $YNH_APP_BASEDIR/sources/extra_files/$image_spec/. "$dest_dir"
+	fi
+}
