@@ -7,57 +7,52 @@
 #=================================================
 
 source _common.sh
-source ynh_docker_image_extract
 source /usr/share/yunohost/helpers
+
 
 #=================================================
 # CHECK VERSION
 #=================================================
+ynh_script_progression --message="Checking version..."
 
 upgrade_type=$(ynh_check_app_version_changed)
 
-#=================================================
-# STANDARD UPGRADE STEPS
-#=================================================
-# STOP SYSTEMD SERVICE
-#=================================================
-ynh_script_progression --message="Stopping a systemd service..."
-
-ynh_systemd_action --service_name=$app --action="stop" --log_path="systemd" --line_match="Stopped"
 
 #=================================================
-# DOWNLOAD, CHECK AND UNPACK SOURCE
+# ENSURE DOWNWARD COMPATIBILITY
 #=================================================
+ynh_script_progression --message="Ensuring downward compatibility..."
 
-if [ "$upgrade_type" == "UPGRADE_APP" ]
-then
-	ynh_script_progression --message="Upgrading source files..."
-
-	# Download, check integrity, uncompress the source of sabnzbd from app.src to his build directory
-	docker_arg=""
-	if [ $YNH_ARCH == "armhf" ] 
-	then
-		docker_arg="--os_arch_variant=linux/arm/v7"
-	fi
-	ynh_docker_image_extract --dest_dir="$install_dir/build/" --image_spec="$pkg_image:$(ynh_app_upstream_version)" $docker_arg
-	mkdir -p "$install_dir/live/"
+# If language_key doesn't exist, create it
+if [ -z "${language_key:-}" ]; then
+        language_key=$(ynh_app_setting_get --app=$app --key=language)
+	ynh_app_setting_set --app=$app --key=language_key --value=$language_key
+	ynh_app_setting_delete --app=$app --key=language
 fi
 
-chmod -R o-rwx "$install_dir"
-chown -R $app:$app "$install_dir"
+#=================================================
+# NGINX CONFIGURATION
+#=================================================
+ynh_script_progression --message="Upgrading NGINX web server configuration..."
+
+# Create a dedicated NGINX config
+ynh_add_nginx_config
 
 #=================================================
 # SPECIFIC UPGRADE
 #=================================================
-# MAKE UPGRADE
+# MAKE INSTALL
 #=================================================
-ynh_script_progression --message="Making upgrade..."
+ynh_script_progression --message="Making install..."
 
 if [ "$upgrade_type" == "UPGRADE_APP" ]
 then
-	mv -f "$install_dir/build/sabnzbd" "$install_dir/live/sabnzbd"
-	ynh_secure_remove --file="$install_dir/live/web-vault/"
-	rsync -a "$install_dir/build/web-vault/" "$install_dir/live/web-vault/"
+	
+	# Download, check integrity, uncompress and patch the source from app.src
+	ynh_setup_source --dest_dir="$install_dir/build/"
+	
+	mkdir -p "$install_dir/live/"
+	rsync -a "$install_dir/build/opt/sabnzbd/" "$install_dir/live/"
 	ynh_secure_remove --file="$install_dir/build"
 fi
 
@@ -66,46 +61,62 @@ chmod -R o-rwx "$install_dir"
 chown -R $app:$app "$install_dir"
 
 #=================================================
+# UPDATE DATA DIRECTORY
+#=================================================
+ynh_script_progression --message="Updating data directory..."
+
+mkdir -p $data_dir
+if [ "$upgrade_type" == "UPGRADE_APP" ]
+then
+	rsync -a "$install_dir/live/assets/" "$data_dir/assets/"
+	ynh_secure_remove --file="$install_dir/live/assets/"
+fi
+
+chmod 750 "$data_dir"
+chmod -R o-rwx "$data_dir"
+chown -R $app:www-data "$data_dir"
+
+#=================================================
 # UPDATE A CONFIG FILE
 #=================================================
 ynh_script_progression --message="Updating a configuration file..."
 
-ynh_add_config --template="vaultwarden.env" --destination="$install_dir/live/.env"
+ynh_add_config --template="../conf/.env" --destination="$install_dir/.env"
 
-chmod 400 "$install_dir/live/.env"
-chown $app:$app "$install_dir/live/.env"
+chmod 600 "$install_dir/.env"
+chown $app:$app "$install_dir/.env"
 
 #=================================================
-# REAPPLY SYSTEM CONFIGURATIONS
+# SETUP SYSTEMD
 #=================================================
-ynh_script_progression --message="Upgrading system configurations related to $app..." --weight=1
-
-# Create a dedicated NGINX config
-ynh_add_nginx_config
+ynh_script_progression --message="Upgrading systemd configuration..."
 
 # Create a dedicated systemd config
 ynh_add_systemd_config
 
-mkdir -p "/var/log/$app"
-chown -R $app:$app "/var/log/$app"
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+# SETUP LOGROTATE
+#=================================================
+ynh_script_progression --message="Upgrading logrotate configuration..."
+
 # Use logrotate to manage app-specific logfile(s)
 ynh_use_logrotate --non-append
 
-mkdir -p "/var/log/$app"
-touch "/var/log/$app/$app.log"
-chown -R $app:$app "/var/log/$app"
+#=================================================
+# INTEGRATE SERVICE IN YUNOHOST
+#=================================================
+ynh_script_progression --message="Integrating service in YunoHost..."
 
-# Create a dedicated Fail2Ban config
-ynh_add_fail2ban_config --logpath="/var/log/$app/$app.log" --failregex="^.*Username or password is incorrect\. Try again\. IP: <ADDR>\. Username:.*$"
-
-yunohost service add $app --description="$app daemon for vaultwarden" --log="/var/log/$app/$app.log"
+yunohost service add $app --description="SabNZBD Usenet Client" --log="/var/log/$app/$app.log"
 
 #=================================================
 # START SYSTEMD SERVICE
 #=================================================
 ynh_script_progression --message="Starting a systemd service..."
 
-ynh_systemd_action --service_name=$app --action="start" --log_path="systemd" --line_match="Rocket has launched from" --length=100
+ynh_exec_warn_less ynh_systemd_action --service_name=$app --action="start" --log_path="/var/log/$app/$app.log" --line_match="Started AI-Powered Photos App for the Decentralized Web"
 
 #=================================================
 # END OF SCRIPT
