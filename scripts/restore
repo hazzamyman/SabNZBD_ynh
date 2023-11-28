@@ -10,6 +10,13 @@
 source ../settings/scripts/_common.sh
 source /usr/share/yunohost/helpers
 
+
+#=================================================
+# STANDARD RESTORATION STEPS
+#=================================================
+
+
+
 #=================================================
 # RESTORE THE APP MAIN DIR
 #=================================================
@@ -17,8 +24,9 @@ ynh_script_progression --message="Restoring the app main directory..."
 
 ynh_restore_file --origin_path="$install_dir"
 
+chmod 750 "$install_dir"
 chmod -R o-rwx "$install_dir"
-chown -R $app:$app "$install_dir"
+chown -R $app:www-data "$install_dir"
 
 #=================================================
 # RESTORE THE DATA DIRECTORY
@@ -27,41 +35,63 @@ ynh_script_progression --message="Restoring the data directory..."
 
 ynh_restore_file --origin_path="$data_dir" --not_mandatory
 
-chown -R $app:$app "$data_dir"
+mkdir -p $data_dir
+
+chmod 750 "$data_dir"
+chmod -R o-rwx "$data_dir"
+chown -R $app:www-data "$data_dir"
 
 #=================================================
-# RESTORE SYSTEM CONFIGURATIONS
+# SPECIFIC RESTORATION
 #=================================================
-# RESTORE THE PHP-FPM CONFIGURATION
+
+
 #=================================================
-ynh_script_progression --message="Restoring system configurations related to $app..." --weight=1
+# RESTORE THE NGINX CONFIGURATION
+#=================================================
+ynh_script_progression --message="Restoring the NGINX web server configuration..."
 
 ynh_restore_file --origin_path="/etc/nginx/conf.d/$domain.d/$app.conf"
+
+
+#=================================================
+# RESTORE SYSTEMD
+#=================================================
+ynh_script_progression --message="Restoring the systemd configuration..."
 
 ynh_restore_file --origin_path="/etc/systemd/system/$app.service"
 systemctl enable $app.service --quiet
 
+#=================================================
+# RESTORE THE LOGROTATE CONFIGURATION
+#=================================================
+ynh_script_progression --message="Restoring the logrotate configuration..."
+
 mkdir -p "/var/log/$app"
 chown -R $app:$app "/var/log/$app"
+
 ynh_restore_file --origin_path="/etc/logrotate.d/$app"
 
-# Create a dedicated Fail2Ban config
-mkdir -p "/var/log/$app"
-touch "/var/log/$app/$app.log"
-chown -R $app:$app "/var/log/$app"
+#=================================================
+# INTEGRATE SERVICE IN YUNOHOST
+#=================================================
+ynh_script_progression --message="Integrating service in YunoHost..."
 
-ynh_restore_file --origin_path="/etc/fail2ban/jail.d/$app.conf"
-ynh_restore_file --origin_path="/etc/fail2ban/filter.d/$app.conf"
-ynh_systemd_action --action=restart --service_name=fail2ban
-
-yunohost service add $app --description="$app daemon for sabnzbd" --log="/var/log/$app/$app.log"
+yunohost service add $app --description="SabNZBD Usenet client" --log="/var/log/$app/$app.log"
 
 #=================================================
 # START SYSTEMD SERVICE
 #=================================================
 ynh_script_progression --message="Starting a systemd service..."
 
-ynh_systemd_action --service_name=$app --action="start" --log_path="systemd" --line_match="sabnzbd has launched from" --length=100
+ynh_exec_warn_less ynh_systemd_action --service_name=$app --action="start" --log_path="/var/log/$app/$app.log" --line_match="Started AI-Powered Photos App for the Decentralized Web"
+
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+# RELOAD NGINX AND PHP-FPM
+#=================================================
+ynh_script_progression --message="Reloading NGINX web server..."
 
 ynh_systemd_action --service_name=nginx --action=reload
 
