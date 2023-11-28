@@ -1,6 +1,7 @@
 [Unit]
-Description=Small description of the service
-After=network.target
+Description=sabnzbd
+Wants=network-online.target
+After=network-online.target nss-lookup.target
 
 [Service]
 Type=simple
