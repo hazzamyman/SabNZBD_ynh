@@ -7,22 +7,24 @@
 #=================================================
 
 source _common.sh
-source ynh_docker_image_extract
 source /usr/share/yunohost/helpers
+
 
 #=================================================
 # RETRIEVE ARGUMENTS FROM THE MANIFEST
 #=================================================
 
-#admin_mail=$(ynh_user_get_info --username=$admin --key=mail)
-#admin_token=$(ynh_string_random --length=48 | base64)
+if [ $language == "fr" ]; then
+	language_key="french"
+else
+	language_key="english"
+fi
 
 #=================================================
 # STORE SETTINGS FROM MANIFEST
 #=================================================
-ynh_script_progression --message="Storing installation settings..."
 
-#ynh_app_setting_set --app=$app --key=admin_token --value=$admin_token
+ynh_app_setting_set --app=$app --key=language_key --value=$language_key
 
 #=================================================
 # DOWNLOAD, CHECK AND UNPACK SOURCE
@@ -30,65 +32,84 @@ ynh_script_progression --message="Storing installation settings..."
 ynh_script_progression --message="Setting up source files..."
 
 # Download, check integrity, uncompress and patch the source from app.src
-docker_arg=""
-if [ $YNH_ARCH == "armhf" ] 
-then
-	docker_arg="--os_arch_variant=linux/arm/v7"
-fi
-ynh_docker_image_extract --dest_dir="$install_dir/build/" --image_spec="$pkg_image:$(ynh_app_upstream_version)" $docker_arg
+
+chmod 750 "$install_dir"
+chmod -R o-rwx "$install_dir"
+chown -R $app:www-data "$install_dir"
+
+#=================================================
+# NGINX CONFIGURATION
+#=================================================
+ynh_script_progression --message="Configuring NGINX web server..."
+
+# Create a dedicated NGINX config
+ynh_add_nginx_config
+
+#=================================================
+# SPECIFIC SETUP
+#=================================================
+# MAKE INSTALL
+#=================================================
+ynh_script_progression --message="Making install..."
+
+ynh_setup_source --dest_dir="$install_dir/build"
+
 mkdir -p "$install_dir/live/"
+
+rsync -a "$install_dir/build/opt/sabnzbd/" "$install_dir/live/"
+ynh_secure_remove --file="$install_dir/build"
 
 chmod 750 "$install_dir"
 chmod -R o-rwx "$install_dir"
 chown -R $app:$app "$install_dir"
 
 #=================================================
-# SYSTEM CONFIGURATION
+# CREATE DATA DIRECTORY
 #=================================================
-ynh_script_progression --message="Adding system configurations related to $app..." --weight=1
+ynh_script_progression --message="Creating a data directory..."
 
-# Create a dedicated NGINX config
-ynh_add_nginx_config
+#mkdir -p $data_dir
+rsync -a "$install_dir/live/assets/" "$data_dir/assets/"
+ynh_secure_remove --file="$install_dir/live/assets/"
 
-# Create a dedicated systemd config
-ynh_add_systemd_config
-
-# Use logrotate to manage application logfile(s)
-mkdir -p "/var/log/$app"
-chown -R $app:$app "/var/log/$app"
-
-ynh_use_logrotate
-
-# Create a dedicated Fail2Ban config
-mkdir -p "/var/log/$app"
-touch "/var/log/$app/$app.log"
-chown -R $app:$app "/var/log/$app"
-
-ynh_add_fail2ban_config --logpath="/var/log/$app/$app.log" --failregex="^.*Username or password is incorrect\. Try again\. IP: <ADDR>\. Username:.*$"
-
-yunohost service add $app --description="$app daemon for sabnzbd" --log="/var/log/$app/$app.log"
-
-#=================================================
-# MAKE INSTALL
-#=================================================
-ynh_script_progression --message="Making install..."
-
-mv -f "$install_dir/build/sabnzbd" "$install_dir/live/sabnzbd"
-rsync -a "$install_dir/build/web-vault/" "$install_dir/live/web-vault/"
-ynh_secure_remove --file="$install_dir/build"
-
-chmod -R o-rwx "$install_dir"
-chown -R $app:$app "$install_dir"
+chmod 750 "$data_dir"
+chmod -R o-rwx "$data_dir"
+chown -R $app:www-data "$data_dir"
 
 #=================================================
 # ADD A CONFIGURATION
 #=================================================
 ynh_script_progression --message="Adding a configuration file..."
 
-ynh_add_config --template="sabnzbd.env" --destination="$install_dir/live/.env"
+ynh_add_config --template="../conf/.env" --destination="$install_dir/.env"
 
-chmod 400 "$install_dir/live/.env"
-chown $app:$app "$install_dir/live/.env"
+chmod 600 "$install_dir/.env"
+chown $app:$app "$install_dir/.env"
+
+#=================================================
+# SETUP SYSTEMD
+#=================================================
+ynh_script_progression --message="Configuring a systemd service..."
+
+# Create a dedicated systemd config
+ynh_add_systemd_config
+
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+# SETUP LOGROTATE
+#=================================================
+ynh_script_progression --message="Configuring log rotation..."
+
+# Use logrotate to manage application logfile(s)
+ynh_use_logrotate
+
+#=================================================
+# INTEGRATE SERVICE IN YUNOHOST
+#=================================================
+ynh_script_progression --message="Integrating service in YunoHost..."
+
+yunohost service add $app --description="Usenet Client" --log="/var/log/$app/$app.log"
 
 #=================================================
 # START SYSTEMD SERVICE
@@ -96,7 +117,7 @@ chown $app:$app "$install_dir/live/.env"
 ynh_script_progression --message="Starting a systemd service..."
 
 # Start a systemd service
-ynh_systemd_action --service_name=$app --action="start" --log_path="systemd" --line_match="Rocket has launched from" --length=100
+ynh_exec_warn_less ynh_systemd_action --service_name=$app --action="start" --log_path="/var/log/$app/$app.log" --line_match="Started AI-Powered Photos App for the Decentralized Web"
 
 #=================================================
 # END OF SCRIPT
