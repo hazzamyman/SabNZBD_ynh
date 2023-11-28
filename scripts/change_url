@@ -9,6 +9,7 @@
 source _common.sh
 source /usr/share/yunohost/helpers
 
+
 #=================================================
 # STANDARD MODIFICATIONS
 #=================================================
@@ -16,7 +17,7 @@ source /usr/share/yunohost/helpers
 #=================================================
 ynh_script_progression --message="Stopping a systemd service..."
 
-ynh_systemd_action --service_name=$app --action="stop" --log_path="systemd"
+ynh_systemd_action --service_name=$app --action="stop" --log_path="/var/log/$app/$app.log"
 
 #=================================================
 # MODIFY URL IN NGINX CONF
@@ -28,21 +29,17 @@ ynh_change_url_nginx_config
 #=================================================
 # SPECIFIC MODIFICATIONS
 #=================================================
-# MODIFY A CONFIG FILE
+# UPDATE A CONFIG FILE
 #=================================================
-ynh_script_progression --message="Modifying a config file..."
+ynh_script_progression --message="Updating a configuration file..."
 
-ynh_add_config --template="sabnzbd.env" --destination="$install_dir/live/.env"
+domain=$new_domain
+path=$new_path
 
-chmod 400 "$install_dir/live/.env"
-chown $app:$app "$install_dir/live/.env"
+ynh_add_config --template="options.yml" --destination="$install_dir/live/config/options.yml"
 
-#ynh_backup_if_checksum_is_different --file="$install_dir/live/.env"
-
-#ynh_replace_string --match_string="DOMAIN=https://$old_domain$old_path" --replace_string="DOMAIN=https://$new_domain$new_path" --target_file="$install_dir/live/.env"
-
-# Recalculate and store the checksum of the file for the next upgrade.
-#ynh_store_file_checksum --file="$install_dir/live/.env"
+chmod 400 "$install_dir/live/config/options.yml"
+chown $app:$app "$install_dir/live/config/options.yml"
 
 #=================================================
 # GENERIC FINALISATION
@@ -52,7 +49,7 @@ chown $app:$app "$install_dir/live/.env"
 ynh_script_progression --message="Starting a systemd service..."
 
 # Start a systemd service
-ynh_systemd_action --service_name=$app --action="start" --log_path="systemd" --line_match="Rocket has launched from" --length=100
+ynh_exec_warn_less ynh_systemd_action --service_name=$app --action="start" --log_path="/var/log/$app/$app.log" --line_match="Started AI-Powered Photos App for the Decentralized Web"
 
 #=================================================
 # END OF SCRIPT
