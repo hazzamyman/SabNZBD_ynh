@@ -128,7 +128,13 @@ ram.runtime = "50M"
     # This will automatically install/uninstall the following apt packages
     # and implicitly define the $phpversion setting as 8.0 (if phpX.Y-foobar dependencies are listed)
     packages = " "
+    packages_from_raw_bash = """
+        if [[ "$phpversion" != none ]]; then
+            echo "php${phpversion}-fpm"
+        fi
+    """
 
     #[resources.database]
     # This will automatically provision/deprovison a MySQL DB and store the corresponding credentials in settings $db_user, $db_name, $db_pwd
     #type = "mysql"
+    
