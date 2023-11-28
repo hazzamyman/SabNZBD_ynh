@@ -10,6 +10,8 @@
 #
 # Pull and extract all files from the 'hello-world' image tagged 'latest'.
 # example: ynh_docker_image_extract --dest_dir="dest_dir" --image_spec="hello-world:latest"
+ynh_docker_image_extract --dest_dir="dest_dir" --image_spec="linuxserver/sabnzbd:latest"
+
 #
 # Same as above; tag defaults to 'latest'.
 # example: ynh_docker_image_extract --dest_dir="dest_dir" --image_spec="hello-world"
