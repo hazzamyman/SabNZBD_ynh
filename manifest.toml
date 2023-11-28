@@ -78,12 +78,12 @@ ram.runtime = "50M"
     # this is a generic question - ask strings are automatically handled by YunoHost's core
     #type = "user"
 
-    #[install.password]
+    [install.password]
     # this is a generic question - ask strings are automatically handled by YunoHost's core
     # Note that user-provided passwords questions are not automatically saved as setting
-    #help.en = "Use the help field to add an information for the admin about this question."
-    #help.fr = "Utilisez le champ aide pour ajouter une information à l'intention de l'administrateur à propos de cette question."
-    #type = "password"
+    help.en = "SabNZBD currently supports only one user : admin. Choose a password here."
+    help.fr = "SabNZBD ne permet qu'un seul utilisateur pour le moment. Choisissez un mot de passe ici."
+    type = "password"
 
 [resources]
     # See the packaging documentation for the full set
@@ -91,19 +91,16 @@ ram.runtime = "50M"
 
     [resources.sources]
 
-        #[resources.sources.main]
-        # This will pre-fetch the asset which can then be deployed during the install/upgrade scripts with :
-        #    ynh_setup_source --dest_dir="$install_dir"
-        # You can also define other assets than "main" and add --source_id="foobar" in the previous command
-        #format = "docker"
-        #sha256 = "24cdc711a9a9425b65b53dd5c084f78cc0f6d978c5c712481b7031751d569588"
+        [resources.sources.main]
+        format = "docker"
+        extract = true
+        prefetch = false
 
-        # These infos are used by https://github.com/YunoHost/apps/blob/master/tools/autoupdate_app_sources/autoupdate_app_sources.py
-        # to auto-update the previous asset urls and sha256sum + manifest version
-        # assuming the upstream's code repo is on github and relies on tags or releases
-        # See the 'sources' resource documentation for more details
-
-        # autoupdate.strategy = "latest_github_tag"
+        amd64.url = "linuxserver/sabnzbd:latest"
+        amd64.sha256 = "2782e824edfd779cfd6ef58140d758b77910733bebbeb3ce0c9452f9edc7a9c4"
+        
+        arm64.url = "linuxserver/sabnzbd:latest"
+        arm64.sha256 = "56a2bc94661c859b0907e5c475001de4ebcd2f5ff60a3245f94d1524554ce30b"
 
     [resources.system_user]
     # This will provision/deprovision a unix system user
