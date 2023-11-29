@@ -74,16 +74,16 @@ ram.runtime = "50M"
     choices = ["fr", "en"]
     default = "fr"
 
-    #[install.admin]
+    [install.admin]
     # this is a generic question - ask strings are automatically handled by YunoHost's core
-    #type = "user"
+    type = "user"
 
-    #[install.password]
+    [install.password]
     # this is a generic question - ask strings are automatically handled by YunoHost's core
     # Note that user-provided passwords questions are not automatically saved as setting
-    #help.en = "SabNZBD currently supports only one user : admin. Choose a password here."
-    #help.fr = "SabNZBD ne permet qu'un seul utilisateur pour le moment. Choisissez un mot de passe ici."
-    #type = "password"
+    help.en = "SabNZBD currently supports only one user : admin. Choose a password here."
+    help.fr = "SabNZBD ne permet qu'un seul utilisateur pour le moment. Choisissez un mot de passe ici."
+    type = "password"
 
 [resources]
     # See the packaging documentation for the full set
