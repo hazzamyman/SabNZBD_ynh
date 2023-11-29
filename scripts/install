@@ -66,6 +66,8 @@ ynh_setup_source --dest_dir="$install_dir/build"
 
 mkdir -p "$install_dir/live/"
 
+mkdir -p "$install_dir/live/bin/sabnzbd/"
+
 mkdir -p "$install_dir/build/opt/sabnzbd/"
 
 rsync -a "$install_dir/build/opt/sabnzbd/" "$install_dir/live/"
