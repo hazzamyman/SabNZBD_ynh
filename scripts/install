@@ -101,10 +101,10 @@ chown $app:$app "$install_dir/.env"
 #=================================================
 # SETUP SYSTEMD
 #=================================================
-#ynh_script_progression --message="Configuring a systemd service..."
+ynh_script_progression --message="Configuring a systemd service..."
 
 # Create a dedicated systemd config
-#ynh_add_systemd_config
+ynh_add_systemd_config
 
 #=================================================
 # GENERIC FINALIZATION
@@ -126,10 +126,10 @@ yunohost service add $app --description="Usenet Client" --log="/var/log/$app/$ap
 #=================================================
 # START SYSTEMD SERVICE
 #=================================================
-#ynh_script_progression --message="Starting a systemd service..."
+ynh_script_progression --message="Starting a systemd service..."
 
 # Start a systemd service
-#ynh_exec_warn_less ynh_systemd_action --service_name=$app --action="start" --log_path="/var/log/$app/$app.log" --line_match="Started AI-Powered Photos App for the Decentralized Web"
+ynh_exec_warn_less ynh_systemd_action --service_name=$app --action="start" --log_path="/var/log/$app/$app.log" --line_match="Started AI-Powered Photos App for the Decentralized Web"
 
 #chmod 750 "$data_dir"
 #chmod -R o-rwx "$data_dir"
