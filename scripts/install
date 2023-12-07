@@ -32,6 +32,11 @@ source /usr/share/yunohost/helpers
 
 #=================================================
 # APP "BUILD" (DEPLOYING SOURCES, VENV, COMPILING ETC)
+
+#=================================================
+# ADD SOURCES TO APT PACKAGE
+echo "deb http://deb.debian.org/debian stable-backports main contrib non-free non-free-firmware" >> /etc/apt/sources.list
+
 #=================================================
 # DOWNLOAD, CHECK AND UNPACK SOURCE
 #=================================================
@@ -124,7 +129,7 @@ yunohost service add $app --description="sabnzbd" --log="/var/log/$app/$app.log"
 ynh_use_logrotate
 
 # Create a dedicated Fail2Ban config
-ynh_add_fail2ban_config --logpath="/var/log/nginx/${domain}-error.log" --failregex="Regex to match into the log for a failed login"
+#ynh_add_fail2ban_config --logpath="/var/log/nginx/${domain}-error.log" --failregex="Regex to match into the log for a failed login"
 
 #=================================================
 # SPECIFIC SETUP
