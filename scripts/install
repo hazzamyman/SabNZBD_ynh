@@ -133,16 +133,66 @@ ynh_use_logrotate
 #=================================================
 ynh_script_progression --message="Installing Python dependencies..." --weight=1
 
-pushd $install_dir
-	python3 -m venv venv
-	venv/bin/pip install --upgrade pip
-	venv/bin/pip install -r requirements.txt
-	venv/bin/pybabel compile -d locales/
-	mkdir -p /var/log/$app
-	chown -R $app:www-data /var/log/$app
-	chmod o-rwx /var/log/$app
-	cat <<EOF >> wsgi.py 
-from server import app
+set -x
+set -e
+
+DIR="~/venv-sabnzbd"
+eval DIR=$DIR
+
+SABDIR="~/git/sabnzbd"
+eval SABDIR=$SABDIR
+if [ ! -d "$SABDIR" ]; then
+  echo $DIR "does not exist."
+  exit;
+fi
+
+SABEXE=$SABDIR"/SABnzbd.py"
+if [ ! -f "$SABEXE" ]; then
+    echo "$SABEXE not found!"
+    exit;
+fi
+
+SABREQ=$SABDIR"/requirements.txt"
+if [ ! -f "$SABREQ" ]; then
+    echo "$SABREQ not found!"
+    exit;
+fi
+
+# Check python3-venv is installed:
+python3 -c "import venv" 2>&1
+#echo $?
+if [ $? -eq 1 ]; then
+    echo "Install python3-venv first!";
+    exit;
+fi
+echo "Good: python3-venv is installed"
+
+if [ ! -d "$DIR" ]; then
+  echo $DIR "does not exist. Creating and filling it.";
+  python3 -m venv "$DIR";
+  source "$DIR"/bin/activate; # activate the venv
+ # to do: check/install python module wheel
+
+  python3 -m pip install -r "$SABREQ";
+  python3 "$SABEXE";
+else
+  source "$DIR"/bin/activate # activate the venv
+  python3 "$SABEXE";
+  
+fi
+
+#pushd $install_dir
+#	python3 -m venv venv
+#	venv/bin/pip install --upgrade pip
+#	venv/bin/pip install -r requirements.txt
+#	venv/bin/pybabel compile -d locales/
+#	mkdir -p /var/log/$app
+#	chown -R $app:www-data /var/log/$app
+#	chmod o-rwx /var/log/$app
+#	cat <<EOF >> wsgi.py 
+
+#from server import app
+
 
 if __name__ == "__main__":
     app.run()
